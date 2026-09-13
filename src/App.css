@@ -24,3 +24,27 @@ h1 { font-size: clamp(34px, 5vw, 60px); font-weight: 400; letter-spacing: 0; lin
 .error-message { border-color: #e4ad9f; color: #a5281c; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 600px) { .dashboard-heading { align-items: start; flex-direction: column; } .product-count { align-self: stretch; } }
+
+/* --- Navegación entre vistas --- */
+.app-header { justify-content: space-between; }
+.app-nav { display: flex; gap: 8px; margin-left: auto; }
+.nav-link { background: transparent; border: 1px solid #3f5c4c; color: #b8d2bf; cursor: pointer; font: 12px Arial, sans-serif; padding: 8px 14px; text-transform: uppercase; letter-spacing: .04em; }
+.nav-link-active { background: #d9ef68; border-color: #d9ef68; color: #173b2c; font-weight: 700; }
+
+/* --- Buscador de producto --- */
+.search-row { display: flex; gap: 10px; margin-bottom: 32px; max-width: 420px; }
+.search-input { border: 1px solid #d9dfd3; flex: 1; font: 14px Arial, sans-serif; padding: 10px 14px; }
+.search-input:focus { border-color: #173b2c; outline: none; }
+.search-button { background: #173b2c; border: none; color: #f8f3e7; cursor: pointer; font: 700 13px Arial, sans-serif; padding: 10px 20px; text-transform: uppercase; }
+.search-button:hover { background: #0f2a20; }
+
+/* --- Tarjeta de detalle de producto --- */
+.detail-card { animation: rise .45s ease both; background: #fffdf7; border: 1px solid #d9dfd3; max-width: 560px; }
+.detail-header { align-items: center; border-bottom: 3px solid; display: flex; justify-content: space-between; padding: 20px 24px; }
+.detail-subid { color: #7c887d; display: block; font: 12px Arial, sans-serif; margin-top: 4px; }
+.detail-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, 1fr); padding: 24px; }
+.detail-item-label { color: #657267; display: block; font: 12px Arial, sans-serif; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.detail-item-value { color: #173b2c; font-size: 22px; font-weight: 400; }
+.detail-contact { background: #f4f0e2; border-top: 1px solid #d9dfd3; color: #5d6d60; font: 13px Arial, sans-serif; padding: 14px 24px; }
+.detail-message { background: #173b2c; color: #f8f3e7; font: 14px Arial, sans-serif; padding: 16px 24px; }
+@media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr; } }
