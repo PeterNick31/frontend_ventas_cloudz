@@ -1,82 +1,61 @@
-import { useEffect, useState } from 'react';
-import { URLS, fetchSeguro, SEMAFORO_INFO } from './api';
+import { useState } from 'react';
+import Semaforo from './components/Semaforo';
+import InventarioLista from './components/InventarioLista';
+import ProveedoresLista from './components/ProveedoresLista';
+import DetalleProducto from './components/DetalleProducto';
+import AnaliticaPanel from './components/AnaliticaPanel';
 
-export default function Semaforo({ onSeleccionarProducto }) {
-  const [alertas, setAlertas] = useState([]);
-  const [estado, setEstado] = useState('cargando');
+function App() {
+  const [vista, setVista] = useState('semaforo');
+  const [productoIdPendiente, setProductoIdPendiente] = useState('');
 
-  useEffect(() => {
-    const cargar = async () => {
-      setEstado('cargando');
+  const irADetalle = (id) => {
+    setProductoIdPendiente(id);
+    setVista('detalle');
+  };
 
-      // Alertas: GET /api/alertas -> semáforo por producto (sin nombre)
-      // Inventario: GET /api/inventario/productos -> para cruzar nombre/sku
-      const [listaAlertas, listaProductos] = await Promise.all([
-        fetchSeguro(`${URLS.alertas}/api/alertas`),
-        fetchSeguro(`${URLS.inventario}/api/inventario/productos?limit=200`),
-      ]);
-
-      if (!listaAlertas) {
-        setEstado('error');
-        return;
-      }
-
-      const productosPorId = new Map((listaProductos || []).map((p) => [p.id, p]));
-      const combinado = listaAlertas.map((a) => ({
-        ...a,
-        producto: productosPorId.get(a.producto_id) || null,
-      }));
-
-      setAlertas(combinado);
-      setEstado('listo');
-    };
-    cargar();
-  }, []);
+  const pestañas = [
+    { key: 'semaforo', label: 'Semáforo' },
+    { key: 'inventario', label: 'Inventario' },
+    { key: 'proveedores', label: 'Proveedores' },
+    { key: 'detalle', label: 'Detalle de producto' },
+    { key: 'analitica', label: 'Analítica' },
+  ];
 
   return (
-    <section className="sales-dashboard">
-      <div className="dashboard-heading">
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="brand-mark">B</div>
         <div>
-          <p className="eyebrow">Operaciones / Ventas</p>
-          <h1>Semáforo de reabastecimiento</h1>
-          <p className="subtitle">Estado de cada producto según su predicción de quiebre de stock.</p>
+          <strong>Bodega Inteligente</strong>
+          <span>Panel de gestión</span>
         </div>
-        <span className="product-count">{alertas.length} productos</span>
-      </div>
-
-      {estado === 'cargando' && <p className="status-message">Cargando semáforo...</p>}
-      {estado === 'error' && (
-        <p className="status-message error-message">
-          No se pudo cargar alertas-api. Verifica que el servicio esté corriendo.
-        </p>
-      )}
-
-      <div className="product-grid">
-        {alertas.map((a) => {
-          const info = SEMAFORO_INFO[a.semaforo] || SEMAFORO_INFO.desconocido;
-          return (
+        <nav className="app-nav">
+          {pestañas.map((p) => (
             <button
-              key={a.producto_id}
-              className="product-card product-card-clickable"
-              style={{ borderLeft: `4px solid ${info.color}` }}
-              onClick={() => onSeleccionarProducto?.(a.producto_id)}
+              key={p.key}
+              className={`nav-link ${vista === p.key ? 'nav-link-active' : ''}`}
+              onClick={() => setVista(p.key)}
             >
-              <div className="card-topline">
-                <span className="product-label">
-                  {a.producto?.nombre || `Producto #${a.producto_id}`}
-                </span>
-                <span className="detail-subid">{a.producto?.sku || ''}</span>
-              </div>
-              <strong className="sales-number">{a.stock_actual ?? '—'}</strong>
-              <span className="sales-label">unidades en stock</span>
-              <span className="status-badge" style={{ color: info.color, marginTop: 8 }}>
-                <span className="status-dot" style={{ backgroundColor: info.dot }} />
-                {a.pedir_ya ? 'Pedir ya' : info.text}
-              </span>
+              {p.label}
             </button>
-          );
-        })}
-      </div>
-    </section>
+          ))}
+        </nav>
+      </header>
+      <main>
+        {vista === 'semaforo' && <Semaforo onSeleccionarProducto={irADetalle} />}
+        {vista === 'inventario' && <InventarioLista onSeleccionarProducto={irADetalle} />}
+        {vista === 'proveedores' && <ProveedoresLista />}
+        {vista === 'detalle' && (
+          <DetalleProducto
+            productoIdInicial={productoIdPendiente}
+            onProductoIdConsumido={() => setProductoIdPendiente('')}
+          />
+        )}
+        {vista === 'analitica' && <AnaliticaPanel />}
+      </main>
+    </div>
   );
 }
+
+export default App;
