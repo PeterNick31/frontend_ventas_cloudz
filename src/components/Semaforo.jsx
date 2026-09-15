@@ -1,71 +1,79 @@
 import { useEffect, useState } from 'react';
+import { URLS, fetchSeguro, SEMAFORO_INFO } from './api';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8082').replace(/\/$/, '');
-
-export default function Semaforo() {
-  const [productos, setProductos] = useState([]);
+export default function Semaforo({ onSeleccionarProducto }) {
+  const [alertas, setAlertas] = useState([]);
   const [estado, setEstado] = useState('cargando');
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    const cargarVentas = async () => {
-      try {
-        setEstado('cargando');
-        const response = await fetch(`${API_URL}/ventas`);
-        if (!response.ok) throw new Error(`La API respondió con ${response.status}`);
-        const data = await response.json();
-        setProductos(Array.isArray(data) ? data : []);
-        setEstado('listo');
-      } catch (requestError) {
-        setError(requestError.message);
+    const cargar = async () => {
+      setEstado('cargando');
+
+      // Alertas: GET /api/alertas -> semáforo por producto (sin nombre)
+      // Inventario: GET /api/inventario/productos -> para cruzar nombre/sku
+      const [listaAlertas, listaProductos] = await Promise.all([
+        fetchSeguro(`${URLS.alertas}/api/alertas`),
+        fetchSeguro(`${URLS.inventario}/api/inventario/productos?limit=200`),
+      ]);
+
+      if (!listaAlertas) {
         setEstado('error');
+        return;
       }
-    };
 
-    cargarVentas();
+      const productosPorId = new Map((listaProductos || []).map((p) => [p.id, p]));
+      const combinado = listaAlertas.map((a) => ({
+        ...a,
+        producto: productosPorId.get(a.producto_id) || null,
+      }));
+
+      setAlertas(combinado);
+      setEstado('listo');
+    };
+    cargar();
   }, []);
-
-  const getBadge = (estadoProducto) => {
-    const badges = {
-      ROJO: { color: '#dc2626', text: 'Baja rotación', className: 'badge-red' },
-      AMARILLO: { color: '#d97706', text: 'Rotación media', className: 'badge-yellow' },
-      VERDE: { color: '#15803d', text: 'Alta rotación', className: 'badge-green' },
-    };
-    return badges[estadoProducto] || { color: '#64748b', text: 'Sin clasificar', className: 'badge-neutral' };
-  };
 
   return (
     <section className="sales-dashboard">
       <div className="dashboard-heading">
         <div>
           <p className="eyebrow">Operaciones / Ventas</p>
-          <h1>Rotación de productos</h1>
-          <p className="subtitle">Resumen acumulado para priorizar reposición.</p>
+          <h1>Semáforo de reabastecimiento</h1>
+          <p className="subtitle">Estado de cada producto según su predicción de quiebre de stock.</p>
         </div>
-        <span className="product-count">{productos.length} productos</span>
+        <span className="product-count">{alertas.length} productos</span>
       </div>
 
-      {estado === 'cargando' && <p className="status-message">Cargando resumen de ventas...</p>}
-      {estado === 'error' && <p className="status-message error-message">No se pudo cargar el resumen: {error}</p>}
-      {estado === 'listo' && productos.length === 0 && (
-        <p className="status-message">Todavía no hay ventas registradas.</p>
+      {estado === 'cargando' && <p className="status-message">Cargando semáforo...</p>}
+      {estado === 'error' && (
+        <p className="status-message error-message">
+          No se pudo cargar alertas-api. Verifica que el servicio esté corriendo.
+        </p>
       )}
 
       <div className="product-grid">
-        {productos.map((prod) => {
-          const badge = getBadge(prod.estado);
+        {alertas.map((a) => {
+          const info = SEMAFORO_INFO[a.semaforo] || SEMAFORO_INFO.desconocido;
           return (
-            <article className="product-card" key={prod.productoId}>
+            <button
+              key={a.producto_id}
+              className="product-card product-card-clickable"
+              style={{ borderLeft: `4px solid ${info.color}` }}
+              onClick={() => onSeleccionarProducto?.(a.producto_id)}
+            >
               <div className="card-topline">
-                <span className="product-label">Producto #{prod.productoId}</span>
-                <span className={`status-badge ${badge.className}`}>
-                  <span className="status-dot" style={{ backgroundColor: badge.color }} />
-                  {badge.text}
+                <span className="product-label">
+                  {a.producto?.nombre || `Producto #${a.producto_id}`}
                 </span>
+                <span className="detail-subid">{a.producto?.sku || ''}</span>
               </div>
-              <strong className="sales-number">{Number(prod.cantidad).toLocaleString('es-CL')}</strong>
-              <span className="sales-label">unidades vendidas</span>
-            </article>
+              <strong className="sales-number">{a.stock_actual ?? '—'}</strong>
+              <span className="sales-label">unidades en stock</span>
+              <span className="status-badge" style={{ color: info.color, marginTop: 8 }}>
+                <span className="status-dot" style={{ backgroundColor: info.dot }} />
+                {a.pedir_ya ? 'Pedir ya' : info.text}
+              </span>
+            </button>
           );
         })}
       </div>

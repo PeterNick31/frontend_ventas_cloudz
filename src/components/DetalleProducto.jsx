@@ -1,79 +1,56 @@
 import { useEffect, useState } from 'react';
-
-const ALERTAS_URL = (import.meta.env.VITE_ALERTAS_URL || 'http://localhost:5002').replace(/\/$/, '');
-const INVENTARIO_URL = (import.meta.env.VITE_INVENTARIO_URL || 'http://localhost:8000').replace(/\/$/, '');
-const VENTAS_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8082').replace(/\/$/, '');
-const PROVEEDORES_URL = (import.meta.env.VITE_PROVEEDORES_URL || 'http://localhost:5001').replace(/\/$/, '');
-const PREDICCION_URL = (import.meta.env.VITE_PREDICCION_URL || 'http://localhost:4004').replace(/\/$/, '');
-
-const ESTADO_INFO = {
-  rojo: { color: '#a5281c', dot: '#dc2626', text: 'Pedir ya' },
-  amarillo: { color: '#a35f08', dot: '#d97706', text: 'Vigilar de cerca' },
-  verde: { color: '#287345', dot: '#15803d', text: 'Stock saludable' },
-  sin_datos: { color: '#64748b', dot: '#94a3b8', text: 'Sin predicción aún' },
-};
-
-// Trae un endpoint y no revienta el resto de la vista si falla — cada
-// microservicio puede estar caído o no tener datos para este producto
-// sin que eso tumbe toda la pantalla.
-async function fetchSeguro(url) {
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch {
-    return null;
-  }
-}
+import { URLS, fetchSeguro, SEMAFORO_INFO } from './api';
 
 export default function DetalleProducto({ productoIdInicial = '', onProductoIdConsumido }) {
   const [productoId, setProductoId] = useState(productoIdInicial);
   const [consultaActual, setConsultaActual] = useState('');
-  const [alerta, setAlerta] = useState(null);
   const [producto, setProducto] = useState(null);
-  const [historialVentas, setHistorialVentas] = useState(null);
+  const [alerta, setAlerta] = useState(null);
   const [tiempoEntrega, setTiempoEntrega] = useState(null);
-  const [tendenciaPrediccion, setTendenciaPrediccion] = useState(null);
+  const [historialVentas, setHistorialVentas] = useState(null);
+  const [prediccion, setPrediccion] = useState(null);
+  const [recalculando, setRecalculando] = useState(false);
   const [estado, setEstado] = useState('inicial'); // inicial | cargando | listo | error
-  const [error, setError] = useState('');
 
-  const buscar = async (id) => {
+  const cargarTodo = async (id) => {
     if (!id) return;
     setEstado('cargando');
-    setError('');
-    try {
-      // Alertas: fuente principal, agrega todo lo demás internamente.
-      const alertaResponse = await fetch(`${ALERTAS_URL}/alertas/${id}`);
-      if (!alertaResponse.ok) {
-        if (alertaResponse.status === 404) throw new Error(`No existe el producto "${id}"`);
-        throw new Error(`La API respondió con ${alertaResponse.status}`);
-      }
-      const alertaData = await alertaResponse.json();
-      setAlerta(alertaData);
 
-      // Llamadas directas adicionales a cada microservicio (requisito de la
-      // rúbrica: cada uno debe ser invocado con ≥2 métodos REST desde el
-      // frontend). Se piden en paralelo y en modo "best effort".
-      const [prod, ventas, entrega, prediccionActual, prediccionDirecta] = await Promise.all([
-        fetchSeguro(`${INVENTARIO_URL}/productos/${id}`),
-        fetchSeguro(`${VENTAS_URL}/ventas/${id}`),
-        fetchSeguro(`${PROVEEDORES_URL}/productos/${id}/tiempo-entrega`),
-        fetchSeguro(`${PREDICCION_URL}/api/predicciones/${id}`),
-        fetchSeguro(`${PREDICCION_URL}/api/predicciones/${id}/historial`),
-      ]);
-      setProducto(prod);
-      setHistorialVentas(Array.isArray(ventas) ? ventas : ventas?.historial || null);
-      setTiempoEntrega(entrega);
-      setTendenciaPrediccion({
-        actual: prediccionActual,
-        historial: Array.isArray(prediccionDirecta) ? prediccionDirecta : prediccionDirecta?.historial || [],
-      });
+    const [prod, alertaData, entrega, ventas, pred] = await Promise.all([
+      // Inventario: GET /api/inventario/productos/{id}
+      fetchSeguro(`${URLS.inventario}/api/inventario/productos/${id}`),
+      // Alertas: GET /api/alertas/{id} (agrega Predicción + Inventario + Proveedores)
+      fetchSeguro(`${URLS.alertas}/api/alertas/${id}`),
+      // Proveedores: GET /api/proveedores/producto/{id}/tiempo-entrega
+      fetchSeguro(`${URLS.proveedores}/api/proveedores/producto/${id}/tiempo-entrega`),
+      // Ventas: GET /api/ventas/producto/{id}?dias=30
+      fetchSeguro(`${URLS.ventas}/api/ventas/producto/${id}?dias=30`),
+      // Predicción: GET /api/prediccion/{id}
+      fetchSeguro(`${URLS.prediccion}/api/prediccion/${id}`),
+    ]);
 
-      setEstado('listo');
-    } catch (requestError) {
-      setError(requestError.message);
+    if (!prod) {
       setEstado('error');
+      return;
     }
+
+    setProducto(prod);
+    setAlerta(alertaData);
+    setTiempoEntrega(entrega);
+    setHistorialVentas(Array.isArray(ventas) ? ventas : null);
+    setPrediccion(pred);
+    setEstado('listo');
+  };
+
+  const recalcularPrediccion = async () => {
+    if (!consultaActual) return;
+    setRecalculando(true);
+    // Predicción: POST /api/prediccion/calcular/{id} (2do método REST distinto)
+    await fetchSeguro(`${URLS.prediccion}/api/prediccion/calcular/${consultaActual}`, {
+      method: 'POST',
+    });
+    await cargarTodo(consultaActual);
+    setRecalculando(false);
   };
 
   useEffect(() => {
@@ -86,11 +63,11 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
   }, [productoIdInicial]);
 
   useEffect(() => {
-    if (consultaActual) buscar(consultaActual);
+    if (consultaActual) cargarTodo(consultaActual);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultaActual]);
 
-  const info = alerta ? ESTADO_INFO[alerta.estado] || ESTADO_INFO.sin_datos : null;
+  const info = alerta ? SEMAFORO_INFO[alerta.semaforo] || SEMAFORO_INFO.desconocido : null;
 
   return (
     <section className="sales-dashboard">
@@ -111,7 +88,7 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
       >
         <input
           type="text"
-          placeholder="ID de producto, ej. P001"
+          placeholder="ID de producto, ej. 42"
           value={productoId}
           onChange={(e) => setProductoId(e.target.value)}
           className="search-input"
@@ -123,85 +100,98 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
         <p className="status-message">Ingresa un ID de producto para ver su detalle.</p>
       )}
       {estado === 'cargando' && <p className="status-message">Cargando detalle...</p>}
-      {estado === 'error' && <p className="status-message error-message">{error}</p>}
+      {estado === 'error' && (
+        <p className="status-message error-message">
+          No existe el producto "{consultaActual}" o inventario-api no respondió.
+        </p>
+      )}
 
-      {estado === 'listo' && alerta && (
+      {estado === 'listo' && producto && (
         <article className="detail-card">
-          <div className="detail-header" style={{ borderColor: info.color }}>
+          <div className="detail-header" style={{ borderColor: info?.color || '#94a3b8' }}>
             <div>
-              <span className="product-label">{alerta.nombreProducto}</span>
+              <span className="product-label">{producto.nombre}</span>
               <span className="detail-subid">
-                Producto #{alerta.productoId}
-                {producto?.categoria ? ` · ${producto.categoria}` : ''}
+                {producto.sku} · {producto.categoria}
               </span>
             </div>
-            <span className="status-badge" style={{ color: info.color }}>
-              <span className="status-dot" style={{ backgroundColor: info.dot }} />
-              {info.text}
-            </span>
+            {info && (
+              <span className="status-badge" style={{ color: info.color }}>
+                <span className="status-dot" style={{ backgroundColor: info.dot }} />
+                {alerta.pedir_ya ? 'Pedir ya' : info.text}
+              </span>
+            )}
           </div>
 
           <div className="detail-grid">
             <div className="detail-item">
               <span className="detail-item-label">Stock actual</span>
-              <strong className="detail-item-value">{alerta.stockActual ?? '—'}</strong>
+              <strong className="detail-item-value">{producto.stock_actual}</strong>
+            </div>
+            <div className="detail-item">
+              <span className="detail-item-label">Stock mínimo</span>
+              <strong className="detail-item-value">{producto.stock_minimo}</strong>
             </div>
             <div className="detail-item">
               <span className="detail-item-label">Días hasta agotamiento</span>
               <strong className="detail-item-value">
-                {alerta.diasHastaAgotamiento != null
-                  ? `${Number(alerta.diasHastaAgotamiento).toFixed(1)} días`
+                {alerta?.dias_hasta_agotamiento != null
+                  ? `${Number(alerta.dias_hasta_agotamiento).toFixed(1)} días`
                   : '—'}
               </strong>
             </div>
             <div className="detail-item">
               <span className="detail-item-label">Proveedor</span>
               <strong className="detail-item-value">
-                {tiempoEntrega?.proveedor || alerta.proveedor || 'No asignado'}
+                {tiempoEntrega?.proveedor_nombre || 'No asignado'}
               </strong>
             </div>
             <div className="detail-item">
               <span className="detail-item-label">Tiempo de entrega</span>
               <strong className="detail-item-value">
-                {(tiempoEntrega?.tiempoEntregaDias ?? alerta.tiempoEntregaDias) != null
-                  ? `${tiempoEntrega?.tiempoEntregaDias ?? alerta.tiempoEntregaDias} días`
+                {tiempoEntrega?.dias_entrega_promedio != null
+                  ? `${tiempoEntrega.dias_entrega_promedio} días`
                   : '—'}
               </strong>
             </div>
+            <div className="detail-item">
+              <span className="detail-item-label">Precio unitario</span>
+              <strong className="detail-item-value">S/ {producto.precio_unitario}</strong>
+            </div>
           </div>
 
-          {producto && (
+          {alerta?.advertencia && (
+            <div className="detail-contact">⚠️ {alerta.advertencia}</div>
+          )}
+          {alerta?.error && <div className="detail-contact">⚠️ {alerta.error}</div>}
+
+          {prediccion && (
             <div className="detail-contact">
-              <strong>Ficha de inventario:</strong> stock mínimo{' '}
-              {producto.stockMinimo ?? producto.stock_minimo ?? '—'}, precio unitario{' '}
-              {producto.precioUnitario ?? producto.precio_unitario ?? '—'}
+              <strong>Predicción vigente:</strong> velocidad de venta{' '}
+              {Number(prediccion.velocidad_venta_diaria).toFixed(1)} u/día, nivel de riesgo{' '}
+              {prediccion.nivel_riesgo}, probabilidad de quiebre{' '}
+              {Math.round(prediccion.prob_quiebre * 100)}%
             </div>
           )}
+
+          <div className="detail-contact" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>¿Predicción desactualizada?</span>
+            <button
+              className="search-button"
+              onClick={recalcularPrediccion}
+              disabled={recalculando}
+              type="button"
+            >
+              {recalculando ? 'Recalculando...' : 'Recalcular predicción'}
+            </button>
+          </div>
 
           {historialVentas && historialVentas.length > 0 && (
             <div className="detail-contact">
-              <strong>Últimas ventas:</strong>{' '}
-              {historialVentas.slice(-5).map((v) => v.cantidad).join(', ')} unidades
+              <strong>Últimas ventas (30 días):</strong>{' '}
+              {historialVentas.slice(0, 5).map((v) => v.cantidadVendida).join(', ')} unidades
             </div>
           )}
-
-          {tendenciaPrediccion?.actual && (
-            <div className="detail-contact">
-              <strong>Predicción (directa):</strong> venta promedio diaria{' '}
-              {tendenciaPrediccion.actual.ventaPromedioDiaria ?? '—'}, probabilidad de quiebre{' '}
-              {tendenciaPrediccion.actual.probQuiebre != null
-                ? `${Math.round(tendenciaPrediccion.actual.probQuiebre * 100)}%`
-                : '—'}
-            </div>
-          )}
-
-          {alerta.contactoProveedor && (
-            <div className="detail-contact">
-              <strong>Contacto:</strong> {alerta.contactoProveedor.nombre} · {alerta.contactoProveedor.telefono}
-            </div>
-          )}
-
-          <div className="detail-message">{alerta.mensaje}</div>
         </article>
       )}
     </section>
