@@ -9,11 +9,10 @@ export default function Semaforo({ onSeleccionarProducto }) {
     const cargar = async () => {
       setEstado('cargando');
 
-      // Alertas: GET /api/alertas -> semáforo por producto (sin nombre)
-      // Inventario: GET /api/inventario/productos -> para cruzar nombre/sku
+      // ✅ Usamos URLS.alertas y URLS.inventario limpiando la duplicación de /api/...
       const [listaAlertas, listaProductos] = await Promise.all([
-        fetchSeguro(`${URLS.alertas}/api/alertas`),
-        fetchSeguro(`${URLS.inventario}/api/inventario/productos?limit=200`),
+        fetchSeguro(`${URLS.alertas}/`), // Apunta a GET /api/alertas/
+        fetchSeguro(`${URLS.inventario}/productos?limit=200`), // Apunta a GET /api/inventario/productos?limit=200
       ]);
 
       if (!listaAlertas) {
