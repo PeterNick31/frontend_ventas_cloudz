@@ -6,12 +6,12 @@ frontend:
         - npm ci
     build:
       commands:
-        - echo "VITE_INVENTARIO_URL=$VITE_INVENTARIO_URL" >> .env.production
-        - echo "VITE_VENTAS_URL=$VITE_VENTAS_URL" >> .env.production
-        - echo "VITE_PROVEEDORES_URL=$VITE_PROVEEDORES_URL" >> .env.production
-        - echo "VITE_PREDICCION_URL=$VITE_PREDICCION_URL" >> .env.production
-        - echo "VITE_ALERTAS_URL=$VITE_ALERTAS_URL" >> .env.production
-        - echo "VITE_ANALITICA_URL=$VITE_ANALITICA_URL" >> .env.production
+        - echo "VITE_INVENTARIO_URL=https://jdseyetgj5.execute-api.us-east-1.amazonaws.com" >> .env.production
+        - echo "VITE_VENTAS_URL=https://jdseyetgj5.execute-api.us-east-1.amazonaws.com" >> .env.production
+        - echo "VITE_PROVEEDORES_URL=https://jdseyetgj5.execute-api.us-east-1.amazonaws.com" >> .env.production
+        - echo "VITE_PREDICCION_URL=https://jdseyetgj5.execute-api.us-east-1.amazonaws.com" >> .env.production
+        - echo "VITE_ALERTAS_URL=https://jdseyetgj5.execute-api.us-east-1.amazonaws.com" >> .env.production
+        - echo "VITE_ANALITICA_URL=https://jdseyetgj5.execute-api.us-east-1.amazonaws.com" >> .env.production
         - npm run build
   artifacts:
     baseDirectory: dist
