@@ -18,15 +18,15 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
 
     const [prod, alertaData, entrega, ventas, pred] = await Promise.all([
       // Inventario: GET /api/inventario/productos/{id}
-      fetchSeguro(`${URLS.inventario}/api/inventario/productos/${id}`),
+      fetchSeguro(`${URLS.inventario}/productos/${id}`),
       // Alertas: GET /api/alertas/{id} (agrega Predicción + Inventario + Proveedores)
-      fetchSeguro(`${URLS.alertas}/api/alertas/${id}`),
+      fetchSeguro(`${URLS.alertas}/${id}`),
       // Proveedores: GET /api/proveedores/producto/{id}/tiempo-entrega
-      fetchSeguro(`${URLS.proveedores}/api/proveedores/producto/${id}/tiempo-entrega`),
+      fetchSeguro(`${URLS.proveedores}/producto/${id}/tiempo-entrega`),
       // Ventas: GET /api/ventas/producto/{id}?dias=30
-      fetchSeguro(`${URLS.ventas}/api/ventas/producto/${id}?dias=30`),
+      fetchSeguro(`${URLS.ventas}/producto/${id}?dias=30`),
       // Predicción: GET /api/prediccion/{id}
-      fetchSeguro(`${URLS.prediccion}/api/prediccion/${id}`),
+      fetchSeguro(`${URLS.prediccion}/${id}`),
     ]);
 
     if (!prod) {
@@ -46,7 +46,7 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
     if (!consultaActual) return;
     setRecalculando(true);
     // Predicción: POST /api/prediccion/calcular/{id} (2do método REST distinto)
-    await fetchSeguro(`${URLS.prediccion}/api/prediccion/calcular/${consultaActual}`, {
+    await fetchSeguro(`${URLS.prediccion}/calcular/${consultaActual}`, {
       method: 'POST',
     });
     await cargarTodo(consultaActual);
