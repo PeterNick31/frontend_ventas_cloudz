@@ -11,8 +11,8 @@ export default function AnaliticaPanel() {
       setEstado('cargando');
       // 2 llamadas directas a Analítica (Athena)
       const [rot, quiebres] = await Promise.all([
-        fetchSeguro(`${URLS.analitica}/api/analitica/rotacion-categoria`),
-        fetchSeguro(`${URLS.analitica}/api/analitica/productos-mas-quiebres`),
+        fetchSeguro(`${URLS.analitica}/rotacion-categoria`),
+        fetchSeguro(`${URLS.analitica}/productos-mas-quiebres`),
       ]);
       if (!rot && !quiebres) {
         setEstado('error');
