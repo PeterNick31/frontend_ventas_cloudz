@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { URLS, fetchSeguro } from './api';
+import { usePaginacion } from './usePaginacion';
+import Paginacion from './Paginacion';
 
 export default function InventarioLista({ onSeleccionarProducto }) {
   const [productos, setProductos] = useState([]);
   const [estado, setEstado] = useState('cargando');
+  const { pagina, totalPaginas, itemsPagina, setPagina } = usePaginacion(productos);
 
   useEffect(() => {
     const cargar = async () => {
@@ -37,7 +40,7 @@ export default function InventarioLista({ onSeleccionarProducto }) {
       )}
 
       <div className="product-grid">
-        {productos.map((p) => {
+        {itemsPagina.map((p) => {
           const enRiesgo = p.stock_actual <= p.stock_minimo;
           return (
             <button
@@ -65,6 +68,8 @@ export default function InventarioLista({ onSeleccionarProducto }) {
           );
         })}
       </div>
+
+      <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiarPagina={setPagina} />
     </section>
   );
 }
