@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { URLS, fetchSeguro } from './api';
+import { usePaginacion } from './usePaginacion';
+import Paginacion from './Paginacion';
 
 export default function ProveedoresLista() {
   const [proveedores, setProveedores] = useState([]);
   const [estado, setEstado] = useState('cargando');
+  const { pagina, totalPaginas, itemsPagina, setPagina } = usePaginacion(proveedores);
 
   useEffect(() => {
     const cargar = async () => {
@@ -37,7 +40,7 @@ export default function ProveedoresLista() {
       )}
 
       <div className="product-grid">
-        {proveedores.map((prov) => (
+        {itemsPagina.map((prov) => (
           <div key={prov.id} className="product-card">
             <div className="card-topline">
               <span className="product-label">{prov.nombre}</span>
@@ -49,6 +52,8 @@ export default function ProveedoresLista() {
           </div>
         ))}
       </div>
+
+      <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiarPagina={setPagina} />
     </section>
   );
 }

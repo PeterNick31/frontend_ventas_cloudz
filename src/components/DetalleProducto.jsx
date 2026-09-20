@@ -12,6 +12,12 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
   const [recalculando, setRecalculando] = useState(false);
   const [estado, setEstado] = useState('inicial'); // inicial | cargando | listo | error
 
+  // --- Registrar venta (POST /api/ventas) ---
+  const [ventaCantidad, setVentaCantidad] = useState('');
+  const [ventaPrecio, setVentaPrecio] = useState('');
+  const [registrandoVenta, setRegistrandoVenta] = useState(false);
+  const [mensajeVenta, setMensajeVenta] = useState(null);
+
   const cargarTodo = async (id) => {
     if (!id) return;
     setEstado('cargando');
@@ -51,6 +57,36 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
     });
     await cargarTodo(consultaActual);
     setRecalculando(false);
+  };
+
+  const registrarVenta = async (e) => {
+    e.preventDefault();
+    if (!consultaActual || !ventaCantidad || !ventaPrecio) return;
+    setRegistrandoVenta(true);
+    setMensajeVenta(null);
+
+    // Ventas: POST /api/ventas (2do método REST distinto sobre este servicio,
+    // además del GET /producto/{id} que ya se usa para el historial)
+    const resultado = await fetchSeguro(`${URLS.ventas}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productoId: Number(consultaActual),
+        fecha: new Date().toISOString().slice(0, 10),
+        cantidadVendida: Number(ventaCantidad),
+        precioUnitario: Number(ventaPrecio),
+      }),
+    });
+
+    if (resultado) {
+      setMensajeVenta({ tipo: 'ok', texto: `Venta registrada: ${ventaCantidad} unidades.` });
+      setVentaCantidad('');
+      setVentaPrecio('');
+      await cargarTodo(consultaActual); // refresca el historial con la venta nueva
+    } else {
+      setMensajeVenta({ tipo: 'error', texto: 'No se pudo registrar la venta.' });
+    }
+    setRegistrandoVenta(false);
   };
 
   useEffect(() => {
@@ -192,6 +228,45 @@ export default function DetalleProducto({ productoIdInicial = '', onProductoIdCo
               {historialVentas.slice(0, 5).map((v) => v.cantidadVendida).join(', ')} unidades
             </div>
           )}
+
+          <form className="detail-contact" onSubmit={registrarVenta}>
+            <strong style={{ display: 'block', marginBottom: 10 }}>Registrar venta de hoy</strong>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <label style={{ fontSize: 12, color: '#5d6d60' }}>
+                Cantidad
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={ventaCantidad}
+                  onChange={(e) => setVentaCantidad(e.target.value)}
+                  className="search-input"
+                  style={{ display: 'block', width: 100, marginTop: 4 }}
+                />
+              </label>
+              <label style={{ fontSize: 12, color: '#5d6d60' }}>
+                Precio unitario (S/)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={ventaPrecio}
+                  onChange={(e) => setVentaPrecio(e.target.value)}
+                  className="search-input"
+                  style={{ display: 'block', width: 130, marginTop: 4 }}
+                />
+              </label>
+              <button type="submit" className="search-button" disabled={registrandoVenta}>
+                {registrandoVenta ? 'Registrando...' : 'Registrar venta'}
+              </button>
+            </div>
+            {mensajeVenta && (
+              <p style={{ marginTop: 8, marginBottom: 0, fontSize: 13, color: mensajeVenta.tipo === 'ok' ? '#287345' : '#a5281c' }}>
+                {mensajeVenta.texto}
+              </p>
+            )}
+          </form>
         </article>
       )}
     </section>

@@ -52,3 +52,13 @@ h1 { font-size: clamp(34px, 5vw, 60px); font-weight: 400; letter-spacing: 0; lin
 .detail-item-value { color: #173b2c; font-size: 22px; font-weight: 400; }
 .detail-contact { background: #f4f0e2; border-top: 1px solid #d9dfd3; color: #5d6d60; font: 13px Arial, sans-serif; padding: 14px 24px; }
 @media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr; } }
+
+/* --- Paginación --- */
+.pagination { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 32px; }
+.pagination-btn { background: #fffdf7; border: 1px solid #d9dfd3; color: #173b2c; cursor: pointer; font: 600 12.5px Arial, sans-serif; padding: 8px 14px; }
+.pagination-btn:hover:not(:disabled) { background: #f4f0e2; }
+.pagination-btn:disabled { color: #b6bdb8; cursor: not-allowed; }
+.pagination-num { background: transparent; border: 1px solid transparent; color: #5d6d60; cursor: pointer; font: 13px Arial, sans-serif; min-width: 34px; padding: 8px 6px; }
+.pagination-num:hover { background: #f4f0e2; }
+.pagination-num-activo { background: #173b2c; border-color: #173b2c; color: #fff; font-weight: 700; }
+.pagination-dots { color: #b6bdb8; padding: 0 4px; }

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { URLS, fetchSeguro, SEMAFORO_INFO } from './api';
+import { usePaginacion } from './usePaginacion';
+import Paginacion from './Paginacion';
 
 export default function Semaforo({ onSeleccionarProducto }) {
   const [alertas, setAlertas] = useState([]);
   const [estado, setEstado] = useState('cargando');
+  const { pagina, totalPaginas, itemsPagina, setPagina } = usePaginacion(alertas);
 
   useEffect(() => {
     const cargar = async () => {
       setEstado('cargando');
 
-      // ✅ Usamos URLS.alertas y URLS.inventario limpiando la duplicación de /api/...
+      // Usamos URLS.alertas y URLS.inventario limpiando la duplicación de /api/...
       const [listaAlertas, listaProductos] = await Promise.all([
         fetchSeguro(`${URLS.alertas}/`), // Apunta a GET /api/alertas/
         fetchSeguro(`${URLS.inventario}/productos?limit=200`), // Apunta a GET /api/inventario/productos?limit=200
@@ -51,7 +54,7 @@ export default function Semaforo({ onSeleccionarProducto }) {
       )}
 
       <div className="product-grid">
-        {alertas.map((a) => {
+        {itemsPagina.map((a) => {
           const info = SEMAFORO_INFO[a.semaforo] || SEMAFORO_INFO.desconocido;
           return (
             <button
@@ -76,6 +79,8 @@ export default function Semaforo({ onSeleccionarProducto }) {
           );
         })}
       </div>
+
+      <Paginacion paginaActual={pagina} totalPaginas={totalPaginas} onCambiarPagina={setPagina} />
     </section>
   );
 }
