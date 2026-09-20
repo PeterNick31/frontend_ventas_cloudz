@@ -1,11 +1,94 @@
+:root {
+  /* Marca (verde bosque + lima) */
+  --marca: #173b2c;
+  --marca-oscura: #0f2a20;
+  --marca-suave: #e6efe8;
+  --acento: #d9ef68;
+
+  /* Superficies y texto (contraste AA sobre --superficie) */
+  --fondo: #f5f4ec;
+  --superficie: #ffffff;
+  --borde: #d5d9cc;
+  --texto: #14261d;
+  --texto-2: #4a5b50;
+
+  /* Estados */
+  --rojo: #a5281c;
+  --rojo-fondo: #fbeae7;
+  --amarillo: #855006;
+  --amarillo-fondo: #fdf1d8;
+  --verde: #1f6b3c;
+  --verde-fondo: #e3f3e8;
+  --neutro: #4a5b50;
+  --neutro-fondo: #eceee6;
+  --azul: #1d4f91;
+  --azul-fondo: #e4eefb;
+
+  --radio: 10px;
+  --sombra: 0 1px 2px rgba(20, 38, 29, 0.06), 0 4px 14px rgba(20, 38, 29, 0.06);
+  --alto-tactil: 44px;
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 * {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--fuente);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+body.sin-scroll {
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--azul);
+  outline-offset: 2px;
+}
+
+.solo-lector {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

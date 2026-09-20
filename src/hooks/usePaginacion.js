@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react';
 
-const POR_PAGINA = 12;
+const POR_PAGINA = 20;
 
 /**
  * Pagina en el cliente un arreglo ya cargado por completo.
- * Se resetea a la página 1 cada vez que cambia el tamaño de la lista
- * (por ejemplo, al volver a cargar los datos).
+ * Vuelve a la página 1 cuando cambian los filtros (se pasa `reiniciarCon`).
  */
 export function usePaginacion(items, porPagina = POR_PAGINA) {
   const [pagina, setPagina] = useState(1);
