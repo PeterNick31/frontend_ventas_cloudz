@@ -9,7 +9,7 @@ export default function ProveedoresLista() {
     const cargar = async () => {
       setEstado('cargando');
       // Llamada directa a Proveedores: GET /api/proveedores
-      const data = await fetchSeguro(`${URLS.proveedores}/api/proveedores?limit=200`);
+      const data = await fetchSeguro(`${URLS.proveedores}?limit=200`);
       if (!data) {
         setEstado('error');
         return;

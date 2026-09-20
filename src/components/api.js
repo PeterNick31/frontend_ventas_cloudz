@@ -1,16 +1,17 @@
-// URLs base de los 6 microservicios (ver .env.example)
+// Detecta si estamos en producción (Amplify) o desarrollo local
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_INVENTARIO_URL || 'http://localhost:8001').replace(/\/$/, '');
+
+// URLs base de los microservicios normalizadas con sus prefijos correspondientes
 export const URLS = {
-  inventario: (import.meta.env.VITE_INVENTARIO_URL || 'http://localhost:8001').replace(/\/$/, ''),
-  ventas: (import.meta.env.VITE_VENTAS_URL || 'http://localhost:8002').replace(/\/$/, ''),
-  proveedores: (import.meta.env.VITE_PROVEEDORES_URL || 'http://localhost:8003').replace(/\/$/, ''),
-  prediccion: (import.meta.env.VITE_PREDICCION_URL || 'http://localhost:8004').replace(/\/$/, ''),
-  alertas: (import.meta.env.VITE_ALERTAS_URL || 'http://localhost:8005').replace(/\/$/, ''),
-  analitica: (import.meta.env.VITE_ANALITICA_URL || 'http://localhost:8006').replace(/\/$/, ''),
+  inventario: `${BASE_URL}/api/inventario`,
+  ventas: `${BASE_URL}/api/ventas`,
+  proveedores: `${BASE_URL}/api/proveedores`,
+  prediccion: `${BASE_URL}/api/prediccion`,
+  alertas: `${BASE_URL}/api/alertas`,
+  analitica: `${BASE_URL}/api/analitica`,
 };
 
-// Trae un endpoint sin reventar el resto de la vista si falla: cada
-// microservicio puede estar caído o no tener datos para este producto
-// sin que eso tumbe toda la pantalla.
+// Trae un endpoint sin reventar el resto de la vista si falla
 export async function fetchSeguro(url, options) {
   try {
     const r = await fetch(url, options);

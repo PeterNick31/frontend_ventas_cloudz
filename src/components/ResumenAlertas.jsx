@@ -9,7 +9,7 @@ export default function ResumenAlertas() {
     const cargar = async () => {
       try {
         // Segunda llamada directa a Alertas: GET /alertas/resumen
-        const response = await fetch(`${ALERTAS_URL}/alertas/resumen`);
+        const response = await fetch(`${ALERTAS_URL}/api/alertas/resumen`);
         if (!response.ok) return;
         setResumen(await response.json());
       } catch {

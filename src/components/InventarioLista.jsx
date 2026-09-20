@@ -9,7 +9,7 @@ export default function InventarioLista({ onSeleccionarProducto }) {
     const cargar = async () => {
       setEstado('cargando');
       // Llamada directa a Inventario: GET /api/inventario/productos
-      const data = await fetchSeguro(`${URLS.inventario}/api/inventario/productos?limit=200`);
+      const data = await fetchSeguro(`${URLS.inventario}/productos?limit=200`);
       if (!data) {
         setEstado('error');
         return;
