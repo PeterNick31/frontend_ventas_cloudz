@@ -14,7 +14,7 @@ export default function Semaforo({ onSeleccionarProducto }) {
 
       // Usamos URLS.alertas y URLS.inventario limpiando la duplicación de /api/...
       const [listaAlertas, listaProductos] = await Promise.all([
-        fetchSeguro(`${URLS.alertas}/`), // Apunta a GET /api/alertas/
+        fetchSeguro(`${URLS.alertas}`), // Apunta a GET /api/alertas/
         fetchSeguro(`${URLS.inventario}/productos?limit=200`), // Apunta a GET /api/inventario/productos?limit=200
       ]);
 
