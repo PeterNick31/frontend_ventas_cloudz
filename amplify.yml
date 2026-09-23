@@ -1,0 +1,19 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        # VITE_API_BASE_URL se define en Amplify > Hosting > Environment variables
+        # (valor: output ApiUrl de la pila). Vite la incrusta durante el build.
+        - 'if [ -z "$VITE_API_BASE_URL" ]; then echo "Falta VITE_API_BASE_URL en las variables de entorno de Amplify"; exit 1; fi'
+        - npm run build
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
